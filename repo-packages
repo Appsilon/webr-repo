@@ -126,3 +126,6 @@ wk
 writexl
 xtable
 yaml
+checkmate
+backports
+zip
