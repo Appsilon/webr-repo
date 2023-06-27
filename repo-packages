@@ -129,3 +129,16 @@ yaml
 checkmate
 backports
 zip
+anytime
+BH
+codetools
+boot
+cluster
+formatters
+xfun
+highr
+knitr
+logger
+callr
+processx
+
