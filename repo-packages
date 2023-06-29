@@ -141,4 +141,14 @@ knitr
 logger
 callr
 processx
-
+nnet
+tinytex
+rmarkdown
+shinyvalidate
+teal.widgets
+teal.widgets
+teal.code
+teal.logger
+teal.data
+teal.slice
+teal
