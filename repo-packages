@@ -152,3 +152,5 @@ teal.logger
 teal.data
 teal.slice
 teal
+shiny.react
+shiny.molstar
