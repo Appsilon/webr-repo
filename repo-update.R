@@ -43,9 +43,9 @@ stopifnot(
 )
 
 contrib_repos <- c(
-  getOption("repos"), 
+  getOption("repos"),
   sapply(
-    unique(readLines("repo-remotes-contrib")),
+    unique(readLines("repo-alternative")),
     function(.x) gsub("/$", "", .x), # Same logic as cran_url above
     USE.NAMES = FALSE
   )
