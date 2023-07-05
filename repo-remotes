@@ -9,3 +9,7 @@ r-wasm/mgcv@webr
 r-wasm/shiny@webr-safari
 r-wasm/svglite@webr
 r-wasm/testthat@webr
+eddelbuettel/digest
+r-lib/styler
+averissimo/vctrs@webr
+tidyverse/lubridate
