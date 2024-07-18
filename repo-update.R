@@ -4,6 +4,7 @@ if (length(args)) {
   packages <- args
 } else {
   packages <- unique(readLines("repo-packages"))
+  packages <- packages[packages != ""]
 }
 
 writeLines(
@@ -41,6 +42,14 @@ stopifnot(
   nzchar(r_version)
 )
 
+contrib_repos <- c(
+  getOption("repos"),
+  sapply(
+    unique(readLines("repo-alternative")),
+    function(.x) gsub("/$", "", .x), # Same logic as cran_url above
+    USE.NAMES = FALSE
+  )
+)
 
 # Download all missing or outdated remotes to the repo
 remotes <- unique(readLines("repo-remotes"))
@@ -65,18 +74,30 @@ make_remote_tarball <- function(pkg, url, target) {
 
   # Recreate a new .tar.gz with the directory structure expected from
   # a source package
-  untar(
-    source_tarball,
-    exdir = file.path(tmp_dir, pkg),
-    extra = "--strip-components=1"
-  )
+  result_code <- attr(untar(source_tarball, list = TRUE), "status")
+  if (is.null(result_code) || result_code == 0L) {
+    untar(
+      source_tarball,
+      exdir = file.path(tmp_dir, pkg),
+      extra = "--strip-components=1"
+    )
+  } else {
+    # Get root folder name, necessary as it won't unzip as `pkg`
+    folder_name <- unzip(source_tarball, list = TRUE)$Name[[1]]
+
+    zip::unzip(source_tarball, exdir = file.path(tmp_dir))
+
+    # rename folder_name to `pkg`
+    file.rename(file.path(tmp_dir, folder_name), file.path(tmp_dir, pkg))
+  }
+
   unlink(source_tarball)
 
   repo_tarball <- file.path(normalizePath("repo"), target)
 
   withr::with_dir(
     tmp_dir,
-    tar(repo_tarball, compression = "gzip")
+    tar(repo_tarball, files = pkg, compression = "gzip")
   )
 }
 
@@ -84,7 +105,7 @@ tarball <- function(pkg, ver) {
   paste0(pkg, "_", ver,  ".tar.gz")
 }
 
-cran_info <- available.packages()
+cran_info <- available.packages(contriburl = contrib.url(contrib_repos))
 cran_packages <- packages[!(packages %in% remotes_packages)]
 versions <- cran_info[cran_packages, "Version", drop = TRUE]
 names(versions) <- cran_packages
@@ -124,14 +145,18 @@ for (pkg in packages) {
     tarball_file <- basename(remote_target)
     tarball_path <- file.path(webr_contrib_src, tarball_file)
   } else {
-    tarball_file <- tarball(pkg, new_ver_string)
-    tarball_path <- file.path(webr_contrib_src, tarball_file)
-    new_url <- paste0(cran_url, "/src/contrib/", tarball_file)
-    download.file(new_url, tarball_path)
+    tarball_result <- download.packages(
+      pkg, webr_contrib_src, repos = contrib_repos
+    )
+    stopifnot(
+      "Could not download package from repos" = NROW(tarball_result) == 1
+    )
+    tarball_path <- tarball_result[1,2]
+    tarball_file <- basename(tarball_path)
   }
 
   if (!pkg %in% host_packages || packageVersion(pkg) < new_ver_string) {
-    install.packages(pkg)
+    install.packages(pkg, repos = contrib_repos)
   }
 
   if (!system2("./webr-build.sh", tarball_path)) {
